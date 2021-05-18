@@ -43,9 +43,9 @@ def GD_step(v, g_v, eta):
 
 
 def hedge_step(mu, g_mu, eta):
-    _, S, A = mu.shape
+    H, S, _ = mu.shape
     updated_mu = mu * np.exp(eta*g_mu)
-    return updated_mu / np.einsum('...a->...', mu).reshape(1, S, A)
+    return updated_mu / np.einsum('...a->...', mu).reshape((H, S, 1))
 
 
 def main():
