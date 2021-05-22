@@ -84,23 +84,15 @@ def main():
     # Initialize v
     v = np.ones((H, S)) * np.flip(np.arange(H) + 1).reshape((H, 1))
 
-    # Debug value
-    mu_000 = np.zeros(T+1)
-    mu_000[0] = mu[0, 0, 0]
-
     # Learn
     for t in range(T):
         g_v, g_mu = grads(q, P, r, mu, v)
         v = GD_step(v, g_v, eta_v)
         mu = hedge_step(mu, g_mu, eta_mu, q)
-        mu_000[t+1] = mu[0, 0, 0]
 
         print(f"t={t}")
         print(f"v={v.flatten()},\tmu={mu.flatten()}")
         print(f"g_v={g_v.flatten()},\tg_mu={g_mu.flatten()}")
-
-    plt.plot(range(T+1), mu_000)
-    plt.show()
 
 
 if __name__ == "__main__":
