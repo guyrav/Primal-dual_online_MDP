@@ -75,25 +75,38 @@ def main():
     T = 1000
 
     # Initialize mu
-    mu = np.zeros((H, S, A))
+    mu = np.zeros((T+1, H, S, A))
+    mu_average = np.zeros((T+1, H, S, A))
     uniform_action = np.ones(A)/A
-    mu[0] = np.outer(q, uniform_action)
+    mu[0, 0] = np.outer(q, uniform_action)
     for i in range(H-1):
-        mu[i+1] = np.outer(np.einsum('ia,iaj', mu[i], P), uniform_action)
+        mu[0, i+1] = np.outer(np.einsum('ia,iaj', mu[0, i], P), uniform_action)
+    mu_average[0] = mu[0]
 
     # Initialize v
     v = np.ones((H, S)) * np.flip(np.arange(H) + 1).reshape((H, 1))
 
     # Learn
     for t in range(T):
-        g_v, g_mu = grads(q, P, r, mu, v)
+        g_v, g_mu = grads(q, P, r, mu[t], v)
         v = GD_step(v, g_v, eta_v)
-        mu = hedge_step(mu, g_mu, eta_mu, q)
+        mu[t+1] = hedge_step(mu[t], g_mu, eta_mu, q)
+        mu_average[t+1] = ((t+1)*mu_average[-1] + mu[t+1])/(t+2)
 
-        print(f"t={t}")
-        print(f"v={v.flatten()},\tmu={mu.flatten()}")
-        print(f"g_v={g_v.flatten()},\tg_mu={g_mu.flatten()}")
-
+    epochs = np.arange(T+1)
+    chi = np.einsum('thia->thi', mu)
+    chi_average = np.einsum('thia->thi', mu_average)
+    nu = np.einsum('thia,iaj->thj', mu, P)
+    nu_average = np.einsum('thia,iaj->thj', mu_average, P)
+    plt.semilogy(chi_average[:, 1, 1], label='chi_bar H=1 i=2')
+    plt.semilogy(nu_average[:, 0, 1], label='nu_bar H=2 i=2')
+    plt.semilogy(chi[:, 1, 1], label='chi H=1 i=2')
+    plt.semilogy(nu[:, 0, 1], label='nu H=2 i=2')
+    plt.title('Iterate and average nu^2 vs. chi^1 on state i=2')
+    plt.xlabel('Epoch')
+    plt.ylabel('Probability of landing in state i=2')
+    plt.legend()
+    plt.show()
 
 if __name__ == "__main__":
     main()
